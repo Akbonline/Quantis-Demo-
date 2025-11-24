@@ -20,3 +20,4 @@ target_include_directories(quantis PRIVATE include ${SQLite3_INCLUDE_DIRS})
 target_link_libraries(quantis PRIVATE ${SQLite3_LIBRARIES})
 
 install(TARGETS quantis RUNTIME DESTINATION bin)
+

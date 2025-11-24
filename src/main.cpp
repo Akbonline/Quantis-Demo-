@@ -1,7 +1,8 @@
+#include "MarketDataProvider.hpp"
 #include "ScreenerEngine.hpp"
 #include "Storage.hpp"
-#include "MarketDataProvider.hpp"
 #include "TableRenderer.hpp"
+#include "quantis/anomaly/AnomalyEngine.hpp"
 #include <iostream>
 
 int main(int argc, char **argv) {
@@ -9,7 +10,8 @@ int main(int argc, char **argv) {
         Storage storage("quantis.db");
         MarketDataProvider provider;
         TableRenderer renderer;
-        ScreenerEngine engine(storage, provider, renderer);
+        AnomalyEngine anomaly;
+        ScreenerEngine engine(storage, provider, renderer, anomaly);
         return engine.run(argc, argv);
     } catch (const std::exception &ex) {
         std::cerr << "Fatal error: " << ex.what() << "\n";

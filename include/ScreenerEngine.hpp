@@ -1,4 +1,4 @@
-#pragma once
+:%#pragma once
 
 #include "MarketDataProvider.hpp"
 #include "Storage.hpp"
@@ -23,3 +23,4 @@ private:
     MarketDataProvider &provider_;
     TableRenderer &renderer_;
 };
+

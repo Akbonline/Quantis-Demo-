@@ -26,3 +26,4 @@ private:
     sqlite3 *db_{};
     std::string db_path_;
 };
+

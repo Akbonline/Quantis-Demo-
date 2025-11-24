@@ -27,3 +27,4 @@ struct Quote {
 
 using ScreenerRow = std::pair<TickerRecord, Quote>;
 using ScreenerRows = std::vector<ScreenerRow>;
+

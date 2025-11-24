@@ -23,14 +23,15 @@ void handleSignal(int) {
 }
 }
 
-ScreenerEngine::ScreenerEngine(Storage &storage, MarketDataProvider &provider, TableRenderer &renderer)
-    : storage_(storage), provider_(provider), renderer_(renderer) {}
+ScreenerEngine::ScreenerEngine(Storage &storage, MarketDataProvider &provider, TableRenderer &renderer, AnomalyEngine &anomaly)
+    : storage_(storage), provider_(provider), renderer_(renderer), anomaly_(anomaly) {}
 
 int ScreenerEngine::run(int argc, char **argv) {
     if (argc < 2) {
         std::cout << "Usage: quantis screener <command> [options]\n"
                   << "Commands:\n"
                   << "  list [realtime]\n"
+                  << "  alerts [list|realtime|clear]\n"
                   << "  add SYMBOL\n"
                   << "  remove SYMBOL\n"
                   << "  export csv\n";
@@ -56,6 +57,23 @@ int ScreenerEngine::handleScreener(const std::vector<std::string> &args) {
     if (sub == "list") {
         bool realtime = args.size() > 1 && args[1] == "realtime";
         return handleList(realtime);
+    }
+    if (sub == "alerts") {
+        if (args.size() == 1) {
+            return handleAlerts(false, false);
+        }
+        const std::string &mode = args[1];
+        if (mode == "list") {
+            return handleAlerts(false, true);
+        }
+        if (mode == "realtime") {
+            return handleAlerts(true, false);
+        }
+        if (mode == "clear") {
+            return handleAlertsClear();
+        }
+        std::cerr << "Unknown alerts subcommand: " << mode << "\n";
+        return 1;
     }
     if (sub == "add") {
         if (args.size() < 2) {
@@ -83,12 +101,17 @@ int ScreenerEngine::handleScreener(const std::vector<std::string> &args) {
     return 1;
 }
 
+ScreenerRows ScreenerEngine::collectRows() {
+    ScreenerRows rows;
+    for (const auto &ticker : storage_.listTickers()) {
+        rows.emplace_back(ticker, provider_.getQuote(ticker.ticker));
+    }
+    return rows;
+}
+
 int ScreenerEngine::handleList(bool realtime) {
     if (!realtime) {
-        ScreenerRows rows;
-        for (const auto &ticker : storage_.listTickers()) {
-            rows.emplace_back(ticker, provider_.getQuote(ticker.ticker));
-        }
+        auto rows = collectRows();
         if (rows.empty()) {
             std::cout << "No tickers tracked. Add one with 'quantis screener add SYMBOL'.\n";
             return 0;
@@ -103,10 +126,7 @@ int ScreenerEngine::handleList(bool realtime) {
 
     while (running.load()) {
         std::cout << "\033[2J\033[H"; // clear screen and move cursor home
-        ScreenerRows rows;
-        for (const auto &ticker : storage_.listTickers()) {
-            rows.emplace_back(ticker, provider_.getQuote(ticker.ticker));
-        }
+        auto rows = collectRows();
         if (rows.empty()) {
             std::cout << "No tickers tracked. Add one with 'quantis screener add SYMBOL'.\n";
             std::cout.flush();
@@ -119,6 +139,55 @@ int ScreenerEngine::handleList(bool realtime) {
     }
 
     g_running_flag = nullptr;
+    return 0;
+}
+
+int ScreenerEngine::handleAlerts(bool realtime, bool alertsOnly) {
+    if (!realtime) {
+        auto rows = collectRows();
+        if (rows.empty()) {
+            std::cout << "No tickers tracked. Add one with 'quantis screener add SYMBOL'.\n";
+            return 0;
+        }
+        std::vector<std::vector<std::string>> alerts;
+        alerts.reserve(rows.size());
+        for (const auto &row : rows) {
+            alerts.push_back(anomaly_.evaluate(row.first.ticker, row.second));
+        }
+        renderer_.renderWithAlerts(rows, alerts, alertsOnly);
+        return 0;
+    }
+
+    std::atomic_bool running{true};
+    g_running_flag = &running;
+    std::signal(SIGINT, handleSignal);
+
+    while (running.load()) {
+        std::cout << "\033[2J\033[H"; // clear screen and move cursor home
+        auto rows = collectRows();
+        if (rows.empty()) {
+            std::cout << "No tickers tracked. Add one with 'quantis screener add SYMBOL'.\n";
+            std::cout.flush();
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+            continue;
+        }
+        std::vector<std::vector<std::string>> alerts;
+        alerts.reserve(rows.size());
+        for (const auto &row : rows) {
+            alerts.push_back(anomaly_.evaluate(row.first.ticker, row.second));
+        }
+        renderer_.renderWithAlerts(rows, alerts, alertsOnly);
+        std::cout.flush();
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+    }
+
+    g_running_flag = nullptr;
+    return 0;
+}
+
+int ScreenerEngine::handleAlertsClear() {
+    anomaly_.clear();
+    std::cout << "Cleared anomaly history.\n";
     return 0;
 }
 
@@ -139,10 +208,7 @@ int ScreenerEngine::handleRemove(const std::string &ticker) {
 }
 
 int ScreenerEngine::handleExport() {
-    ScreenerRows rows;
-    for (const auto &ticker : storage_.listTickers()) {
-        rows.emplace_back(ticker, provider_.getQuote(ticker.ticker));
-    }
+    auto rows = collectRows();
     const std::string filename = "quantis_export.csv";
     if (storage_.exportToCsv(filename, rows)) {
         std::cout << "Exported to " << filename << "\n";
@@ -150,3 +216,4 @@ int ScreenerEngine::handleExport() {
     }
     return 1;
 }
+

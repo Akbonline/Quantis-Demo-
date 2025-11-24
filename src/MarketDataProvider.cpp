@@ -35,3 +35,4 @@ Quote MarketDataProvider::getQuote(const std::string &ticker) {
     q.ask = price + spread;
     return q;
 }
+
