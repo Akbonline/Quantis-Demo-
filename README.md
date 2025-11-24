@@ -41,3 +41,8 @@ Invoke the CLI via `quantis` (or `./build/quantis` without installing):
 
 ## Notes
 The market data provider currently returns randomized values; integrate a real data source for production use.
+
+## Demo
+### Real-time screener demo
+![Real-time Screener demo](./demo/demo_1.png)
+
