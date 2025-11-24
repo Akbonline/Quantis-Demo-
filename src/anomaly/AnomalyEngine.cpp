@@ -58,3 +58,4 @@ std::vector<std::string> AnomalyEngine::evaluate(const std::string &ticker, cons
 }
 
 void AnomalyEngine::clear() { buffers_.clear(); }
+

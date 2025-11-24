@@ -165,4 +165,3 @@ std::string TableRenderer::joinAlerts(const std::vector<std::string> &alerts) {
     }
     return oss.str();
 }
-

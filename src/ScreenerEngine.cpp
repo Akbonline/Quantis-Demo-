@@ -23,8 +23,14 @@ void handleSignal(int) {
 }
 }
 
+ScreenerEngine::ScreenerEngine(Storage &storage, MarketDataProvider &provider, TableRenderer &renderer)
+    : storage_(storage), provider_(provider), renderer_(renderer) {
+    owned_anomaly_ = std::make_unique<AnomalyEngine>();
+    anomaly_ = owned_anomaly_.get();
+}
+
 ScreenerEngine::ScreenerEngine(Storage &storage, MarketDataProvider &provider, TableRenderer &renderer, AnomalyEngine &anomaly)
-    : storage_(storage), provider_(provider), renderer_(renderer), anomaly_(anomaly) {}
+    : storage_(storage), provider_(provider), renderer_(renderer), anomaly_(&anomaly) {}
 
 int ScreenerEngine::run(int argc, char **argv) {
     if (argc < 2) {
@@ -152,7 +158,7 @@ int ScreenerEngine::handleAlerts(bool realtime, bool alertsOnly) {
         std::vector<std::vector<std::string>> alerts;
         alerts.reserve(rows.size());
         for (const auto &row : rows) {
-            alerts.push_back(anomaly_.evaluate(row.first.ticker, row.second));
+            alerts.push_back(anomaly_->evaluate(row.first.ticker, row.second));
         }
         renderer_.renderWithAlerts(rows, alerts, alertsOnly);
         return 0;
@@ -174,7 +180,7 @@ int ScreenerEngine::handleAlerts(bool realtime, bool alertsOnly) {
         std::vector<std::vector<std::string>> alerts;
         alerts.reserve(rows.size());
         for (const auto &row : rows) {
-            alerts.push_back(anomaly_.evaluate(row.first.ticker, row.second));
+            alerts.push_back(anomaly_->evaluate(row.first.ticker, row.second));
         }
         renderer_.renderWithAlerts(rows, alerts, alertsOnly);
         std::cout.flush();
@@ -186,7 +192,7 @@ int ScreenerEngine::handleAlerts(bool realtime, bool alertsOnly) {
 }
 
 int ScreenerEngine::handleAlertsClear() {
-    anomaly_.clear();
+    anomaly_->clear();
     std::cout << "Cleared anomaly history.\n";
     return 0;
 }

@@ -36,3 +36,5 @@ Quote MarketDataProvider::getQuote(const std::string &ticker) {
     return q;
 }
 
+
+

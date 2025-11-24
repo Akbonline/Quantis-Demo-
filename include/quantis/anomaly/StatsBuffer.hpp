@@ -28,3 +28,5 @@ private:
     std::deque<Quote> samples_;
     std::size_t capacity_;
 };
+
+

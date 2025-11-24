@@ -13,6 +13,8 @@ add_executable(quantis
     src/Storage.cpp
     src/MarketDataProvider.cpp
     src/TableRenderer.cpp
+    src/anomaly/AnomalyEngine.cpp
+    src/anomaly/StatsBuffer.cpp
 )
 
 target_include_directories(quantis PRIVATE include ${SQLite3_INCLUDE_DIRS})
@@ -20,4 +22,3 @@ target_include_directories(quantis PRIVATE include ${SQLite3_INCLUDE_DIRS})
 target_link_libraries(quantis PRIVATE ${SQLite3_LIBRARIES})
 
 install(TARGETS quantis RUNTIME DESTINATION bin)
-
