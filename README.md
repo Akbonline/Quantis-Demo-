@@ -46,3 +46,6 @@ The market data provider currently returns randomized values; integrate a real d
 ### Real-time screener demo
 ![Real-time Screener demo](./demo/demo_1.png)
 
+### Alerts and Anomaly detection
+![Alerts and Anomaly](./demo/demo_2.png)
+
